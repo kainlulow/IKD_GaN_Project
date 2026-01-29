@@ -1,0 +1,47 @@
+name: IKD GaN CMOS (Daily V1)
+
+on:
+  schedule:
+    # GitHub Actions cron uses UTC.
+    # 07:00 China time (UTC+8) = 23:00 UTC (previous day)
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  run-ikd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r literature_agent_v1/requirements.txt
+
+      - name: Run IKD incremental sweep
+        run: |
+          python literature_agent_v1/run_incremental.py
+
+      - name: Commit and push changes (if any)
+        run: |
+          git config user.name "ikd-bot"
+          git config user.email "ikd-bot@users.noreply.github.com"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add IKD_GaN_CMOS literature_agent_v1/state/last_run_timestamp.txt
+            git commit -m "IKD update: GaN CMOS $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git push
+          else
+            echo "No changes to commit."
+          fi

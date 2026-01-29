@@ -1,0 +1,49 @@
+{
+  "version": "v1.0",
+  "updated": "2026-01-29",
+  "year_range": {
+    "from": 2010,
+    "to": "present"
+  },
+  "buckets": {
+    "A_general_complementary": [
+      "\"GaN CMOS\" inverter",
+      "\"complementary GaN\" inverter",
+      "\"monolithic GaN CMOS\"",
+      "\"GaN complementary\" logic"
+    ],
+    "B_p_channel": [
+      "\"p-channel GaN\" MISFET",
+      "\"p-GaN\" transistor threshold",
+      "\"p-channel GaN\" TCAD",
+      "\"p-type GaN\" MOSFET"
+    ],
+    "C_n_channel": [
+      "\"GaN nMOS\" MISFET",
+      "\"GaN MOSFET\" enhancement-mode gate stack",
+      "\"GaN\" TCAD \"MOSFET\"",
+      "\"GaN\" \"MIS-HEMT\" TCAD"
+    ],
+    "D_cointegration_circuits": [
+      "\"GaN\" inverter IEDM",
+      "\"GaN CMOS\" \"VLSI Symposium\"",
+      "\"GaN\" \"ring oscillator\" inverter",
+      "\"GaN\" logic gate monolithic"
+    ],
+    "E_enablers": [
+      "\"GaN\" p-type contact resistivity transistor",
+      "\"GaN\" gate dielectric interface state p-channel",
+      "\"polarization engineering\" \"p-channel GaN\"",
+      "\"GaN\" regrowth ohmic contact CMOS"
+    ]
+  },
+  "source_priority": [
+    "IEEE Xplore",
+    "Nature portfolio",
+    "AIP/APS",
+    "ACS",
+    "Elsevier (selective)",
+    "Thesis repositories",
+    "Patents"
+  ]
+}

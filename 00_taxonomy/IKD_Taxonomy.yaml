@@ -1,0 +1,232 @@
+scope: GaN CMOS (full) literature intelligence
+version: v1.0
+updated: '2026-01-29'
+controlled_vocabulary:
+  DeviceType:
+  - p-FET
+  - n-FET
+  - Inverter
+  - Co-integration
+  - Other
+  Method:
+  - TCAD
+  - Experiment
+  - Compact
+  - Hybrid
+  - Other
+  DocType:
+  - Journal
+  - Conference
+  - Thesis
+  - Patent
+  - Report
+  - Other
+  EnablerCategory:
+  - Contacts
+  - Gate Stack
+  - Electrostatics
+  - Geometry
+  - Transport
+  - Integration
+  - Reliability
+  - Other
+  TagConfidence:
+  - High
+  - Medium
+  - Low
+venue_hints:
+  IEEE_TED:
+  - IEEE Transactions on Electron Devices
+  - TED
+  IEEE_EDL:
+  - IEEE Electron Device Letters
+  - EDL
+  IEDM:
+  - International Electron Devices Meeting
+  - IEDM
+  VLSI:
+  - VLSI Symposium
+  - Symposium on VLSI Technology
+  - VLSI Technology
+  Nature:
+  - Nature Electronics
+  - Nature Communications
+  - Nature
+  - Scientific Reports
+  AIP_APS:
+  - Applied Physics Letters
+  - Journal of Applied Physics
+  - Physical Review
+  - Physical Review Applied
+  - Physical Review Materials
+  ACS:
+  - ACS Applied Materials & Interfaces
+  - ACS Photonics
+keyword_rules:
+  DeviceType:
+    p-FET:
+    - p-fet
+    - pfet
+    - p-channel
+    - p channel
+    - pmos
+    - pmos
+    - p-type transistor
+    - 2dhg
+    n-FET:
+    - n-fet
+    - nfet
+    - n-channel
+    - n channel
+    - nmos
+    - nmos
+    - n-type transistor
+    - 2deg
+    - hemt
+    - mosfet
+    Inverter:
+    - inverter
+    - ring oscillator
+    - logic gate
+    - cmos inverter
+    Co-integration:
+    - co-integration
+    - cointegration
+    - monolithic
+    - complementary
+    - cmos
+    - integration flow
+    - process integration
+    - co-fabrication
+    - cofabrication
+  Method:
+    TCAD:
+    - tcad
+    - sentaurus
+    - silvaco
+    - atlas
+    - victory device
+    - sdevice
+    - sde
+    - numerical simulation
+    - device simulation
+    Experiment:
+    - fabricat
+    - measured
+    - measurement
+    - experiment
+    - characterization
+    - xps
+    - tem
+    - afm
+    - hall
+    - tlm
+    Compact:
+    - compact model
+    - spice
+    - bsim
+    - asm
+    - model card
+    - verilog-a
+    - veriloga
+    Hybrid:
+    - hybrid
+    - physics-informed
+    - physics guided
+    - surrogate
+    - ml-assisted
+    - ai-assisted
+  EnablerCategory:
+    Contacts:
+    - ohmic
+    - contact resist
+    - contact resistance
+    - rc
+    - tlm
+    - regrowth
+    - metal stack
+    - anneal
+    - p-contact
+    - n-contact
+    Gate Stack:
+    - gate dielectric
+    - dielectric
+    - oxide
+    - al2o3
+    - hfo2
+    - sinx
+    - aln
+    - alon
+    - mis
+    - mos
+    - interface state
+    - dit
+    - passivation
+    Electrostatics:
+    - threshold
+    - vth
+    - e-mode
+    - enhancement-mode
+    - depletion
+    - electrostatic
+    - polarization engineering
+    - fixed charge
+    - charge control
+    - field plate
+    Geometry:
+    - finfet
+    - nanowire
+    - gaa
+    - gate-all-around
+    - recessed gate
+    - trench
+    - self-aligned
+    - lateral
+    - vertical
+    - spacer
+    Transport:
+    - mobility
+    - scattering
+    - ballistic
+    - tunneling
+    - tat
+    - trap-assisted
+    - leakage mechanism
+    - temperature dependence
+    - ron
+    - on-resistance
+    Integration:
+    - monolithic
+    - cmos
+    - co-integration
+    - cofabrication
+    - process flow
+    - beol
+    - interconnect
+    - co-design
+    - dtco
+    Reliability:
+    - bti
+    - tdbd
+    - hysteresis
+    - stability
+    - aging
+    - degradation
+    - trapping
+    - bias stress
+    - time-dependent
+verification_policy:
+  required_fields:
+  - Title
+  - Year
+  - URL
+  doi_preferred: true
+  accept_without_doi_if:
+  - publisher_landing_page
+  - official_thesis_repository
+  - patent_office_record
+  evidence_snippet_required_for_tags: true
+  dedup_priority:
+  - DOI
+  - normalized_title
+  - title_similarity_plus_year_author

@@ -1,23 +1,16 @@
-name: IKD GaN CMOS (Daily V1)
+name: IKD_GaN_CMOS_NodeB_Daily
 
 on:
   schedule:
-    # GitHub Actions cron uses UTC.
-    # 07:00 China time (UTC+8) = 23:00 UTC (previous day)
-    - cron: "0 23 * * *"
-  workflow_dispatch: {}
-
-permissions:
-  contents: write
+    - cron: "0 2 * * *"   # daily 02:00 UTC
+  workflow_dispatch:
 
 jobs:
-  run-ikd:
+  run-agent:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,31 +22,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r literature_agent_v1/requirements.txt
 
-      - name: Run IKD incremental sweep
+      - name: Run deterministic literature agent (Node B optimized)
         run: |
           python literature_agent_v1/run_incremental.py
 
-      - name: Commit and push changes (if any)
+      - name: Commit updated outputs
         run: |
-          git config user.name "ikd-bot"
-          git config user.email "ikd-bot@users.noreply.github.com"
-
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git add 00_taxonomy 01_literature 02_reports 03_queries literature_agent_v1/state/last_run_timestamp.txt
-            git commit -m "IKD update: GaN CMOS $(date -u +'%Y-%m-%dT%H:%MZ')"
-            git push
-          else
-            echo "No changes to commit."
-          fi
-      - name: Debug list repo files
-        run: |
-          pwd
-          ls -la
-          echo "---- 00_taxonomy ----"
-          ls -la 00_taxonomy || true
-          echo "---- 01_literature ----"
-          ls -la 01_literature || true
-          echo "---- literature_agent_v1 ----"
-          ls -la literature_agent_v1 || true
-          echo "---- state ----"
-          ls -la literature_agent_v1/state || true
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add 01_literature 02_reports literature_agent_v1/state || true
+          git commit -m "Auto-update literature outputs (Node B)" || echo "No changes"
+          git push

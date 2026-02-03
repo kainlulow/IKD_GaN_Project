@@ -1,72 +1,50 @@
 {
-  "version": "v1.0",
-  "updated": "2026-01-29",
-  "year_range": {
-    "from": 2010,
-    "to": "present"
+  "meta": {
+    "version": "v1.1-nodeb",
+    "description": "Node B optimized deterministic literature discovery queries for GaN CMOS demos & monolithic GaN IC platforms",
+    "year_min": 2010
   },
-  "buckets": {
-    "A_general_complementary": [
-      "\"GaN CMOS\" inverter",
-      "\"complementary GaN\" inverter",
-      "\"monolithic GaN CMOS\"",
-      "\"GaN complementary\" logic"
-    ],
-    "B_p_channel": [
-      "\"p-channel GaN\" MISFET",
-      "\"p-GaN\" transistor threshold",
-      "\"p-channel GaN\" TCAD",
-      "\"p-type GaN\" MOSFET"
-    ],
-    "C_n_channel": [
-      "\"GaN nMOS\" MISFET",
-      "\"GaN MOSFET\" enhancement-mode gate stack",
-      "\"GaN\" TCAD \"MOSFET\"",
-      "\"GaN\" \"MIS-HEMT\" TCAD"
-    ],
-    "D_cointegration_circuits": [
-      "\"GaN\" inverter IEDM",
-      "\"GaN CMOS\" \"VLSI Symposium\"",
-      "\"GaN\" \"ring oscillator\" inverter",
-      "\"GaN\" logic gate monolithic"
-    ],
-    "E_enablers": [
-      "\"GaN\" p-type contact resistivity transistor",
-      "\"GaN\" gate dielectric interface state p-channel",
-      "\"polarization engineering\" \"p-channel GaN\"",
-      "\"GaN\" regrowth ohmic contact CMOS"
-    ]
-  },
-  "source_priority": [
-    "IEEE Xplore",
-    "Nature portfolio",
-    "AIP/APS",
-    "ACS",
-    "Elsevier (selective)",
-    "Thesis repositories",
-    "Patents"
+  "buckets": [
+    {
+      "bucket_id": "NODE_B2_GaN_CMOS_Logic_Demos",
+      "description": "True complementary CMOS logic demos: inverter / logic gate / ring oscillator; includes key metric terms",
+      "queries": [
+        "\"GaN CMOS\" inverter",
+        "\"complementary\" GaN inverter",
+        "\"p-channel\" GaN inverter",
+        "\"GaN\" \"ring oscillator\"",
+        "\"GaN\" \"logic gate\"",
+        "\"GaN\" \"voltage transfer\" inverter",
+        "\"GaN\" \"noise margin\" inverter",
+        "\"all-GaN\" CMOS inverter",
+        "\"monolithic\" GaN CMOS"
+      ]
+    },
+    {
+      "bucket_id": "NODE_B1_Monolithic_GaN_IC_Platforms",
+      "description": "Monolithic GaN IC platform/enablers: GaN-on-SOI, deep trench isolation, integrated GaN power IC components, logic on GaN",
+      "queries": [
+        "\"GaN-on-SOI\" integrated circuit",
+        "\"GaN-on-SOI\" monolithically integrated",
+        "\"monolithic\" GaN integrated circuit",
+        "\"all-GaN\" integrated circuit",
+        "\"GaN power IC\" monolithic",
+        "\"deep trench\" GaN isolation",
+        "\"GaN\" \"power integrated circuit\"",
+        "\"GaN\" \"integrated driver\" IC",
+        "\"GaN\" \"monolithic integration\""
+      ]
+    },
+    {
+      "bucket_id": "NODE_B3_Near_CMOS_Context",
+      "description": "Near-CMOS / non-true-CMOS logic context (useful for motivation but should not be mistaken as B2)",
+      "queries": [
+        "\"GaN\" \"depletion load\" inverter",
+        "\"GaN\" \"resistive load\" inverter",
+        "\"GaN\" pseudo-CMOS inverter",
+        "\"GaN\" RTL inverter",
+        "\"GaN\" logic inverter depletion"
+      ]
+    }
   ]
-  {
-  "bucket_id": "NODE_B_GaN_CMOS_and_Monolithic_IC",
-  "description": "Node B discovery: GaN CMOS demos (inverter/logic/RO) + monolithic GaN IC platforms (GaN-on-SOI, all-GaN IC)",
-  "queries": [
-    "\"GaN CMOS\" inverter",
-    "\"complementary\" GaN inverter",
-    "\"GaN\" \"ring oscillator\"",
-    "\"GaN logic\" inverter",
-    "\"all-GaN\" integrated circuit",
-    "\"monolithic\" GaN integrated circuit",
-    "\"GaN-on-SOI\" integrated circuit",
-    "\"GaN-on-SOI\" monolithically integrated",
-    "\"GaN power IC\" monolithic",
-    "\"GaN IC\" logic",
-    "\"GaN\" complementary logic"
-  ],
-  "policy": {
-    "year_min": 2010,
-    "require_doi_or_url": true,
-    "prefer_venues": ["IEDM", "VLSI", "IEDL", "TED", "ISPSD"]
-  }
-}
-
 }

@@ -1,11 +1,11 @@
 {
   "meta": {
-    "version": "v1.2-nodeb",
+    "version": "v1.2-gan-cmos-only",
     "year_min": 2010,
 
     "crossref": {
       "rows_per_page": 200,
-      "max_items_per_query": 2000,
+      "max_items_per_query": 3000,
       "polite_delay_sec": 1.0
     },
 
@@ -13,38 +13,42 @@
       {
         "venue_id": "IEDM",
         "query_terms": [
-          "International Electron Devices Meeting",
-          "IEEE International Electron Devices Meeting",
-          "IEDM"
+          "GaN CMOS",
+          "GaN complementary",
+          "complementary GaN"
         ],
         "year_min": 2010,
-        "max_items": 8000
+        "max_items": 6000
       },
       {
         "venue_id": "VLSI",
         "query_terms": [
-          "Symposium on VLSI Technology",
-          "IEEE Symposium on VLSI Technology",
-          "VLSI Technology"
+          "GaN CMOS",
+          "GaN complementary",
+          "complementary GaN"
         ],
         "year_min": 2010,
-        "max_items": 8000
+        "max_items": 6000
       },
       {
         "venue_id": "TED",
         "query_terms": [
-          "IEEE Transactions on Electron Devices"
+          "GaN CMOS",
+          "GaN complementary",
+          "complementary GaN"
         ],
         "year_min": 2010,
-        "max_items": 8000
+        "max_items": 6000
       },
       {
         "venue_id": "EDL",
         "query_terms": [
-          "IEEE Electron Device Letters"
+          "GaN CMOS",
+          "GaN complementary",
+          "complementary GaN"
         ],
         "year_min": 2010,
-        "max_items": 8000
+        "max_items": 6000
       }
     ],
 
@@ -59,49 +63,25 @@
 
   "buckets": [
     {
-      "bucket_id": "NODE_B2_GaN_CMOS_Logic_Demos",
-      "description": "True complementary logic demos (CMOS-equivalent): inverter / logic gates / ring oscillator / VTC / noise margin / delay",
+      "bucket_id": "GaN_CMOS_ONLY",
+      "description": "GaN CMOS / complementary logic only: CMOS, complementary, inverters, logic gates, ring oscillators, VTC/noise margin/delay; include p/n device pairing signals",
       "queries": [
-        "\"GaN\" complementary logic circuits",
-        "\"GaN\" complementary logic",
-        "\"GaN CMOS\" inverter",
+        "\"GaN CMOS\"",
+        "\"GaN\" CMOS inverter",
+        "\"GaN\" complementary inverter",
         "\"complementary\" GaN inverter",
-        "\"p-channel\" GaN inverter",
-        "\"GaN\" inverter propagation delay",
-        "\"GaN\" \"ring oscillator\"",
-        "\"GaN\" \"logic gate\"",
-        "\"GaN\" \"voltage transfer\" inverter",
+        "\"GaN\" complementary logic",
+        "\"GaN\" complementary logic circuits",
+        "\"GaN\" \"logic gate\" complementary",
+        "\"GaN\" \"ring oscillator\" complementary",
         "\"GaN\" \"noise margin\" inverter",
-        "\"all-GaN\" CMOS inverter",
-        "\"monolithic\" GaN CMOS"
-      ]
-    },
-    {
-      "bucket_id": "NODE_B1_Monolithic_GaN_IC_Platforms",
-      "description": "Monolithic GaN IC platforms/enablers: GaN-on-SOI, isolation, integrated GaN power IC components, logic-on-GaN integration",
-      "queries": [
-        "\"GaN-on-SOI\" integrated circuit",
-        "\"GaN-on-SOI\" monolithically integrated",
-        "\"GaN on SOI\" integrated circuit",
-        "\"monolithic\" GaN integrated circuit",
-        "\"all-GaN\" integrated circuit",
-        "\"GaN power IC\" monolithic",
-        "\"GaN\" \"power integrated circuit\"",
-        "\"GaN\" \"monolithic integration\"",
-        "\"deep trench\" isolation GaN",
-        "\"trench isolation\" GaN",
-        "\"GaN\" \"integrated driver\" IC"
-      ]
-    },
-    {
-      "bucket_id": "NODE_B3_Near_CMOS_Context",
-      "description": "Near-CMOS / non-true-CMOS logic context (for motivation): depletion-load / resistive-load / pseudo-CMOS / RTL",
-      "queries": [
-        "\"GaN\" \"depletion load\" inverter",
-        "\"GaN\" \"resistive load\" inverter",
-        "\"GaN\" pseudo-CMOS inverter",
-        "\"GaN\" RTL inverter",
-        "\"GaN\" logic inverter depletion"
+        "\"GaN\" \"voltage transfer\" inverter",
+        "\"GaN\" inverter propagation delay",
+        "\"p-channel\" GaN AND inverter",
+        "\"p-type\" GaN AND inverter",
+        "\"p-GaN\" inverter",
+        "\"p-channel\" GaN CMOS",
+        "\"p-channel\" GaN complementary"
       ]
     }
   ]

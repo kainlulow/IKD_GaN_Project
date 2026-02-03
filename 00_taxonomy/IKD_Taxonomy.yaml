@@ -1,232 +1,107 @@
-scope: GaN CMOS (full) literature intelligence
-version: v1.0
-updated: '2026-01-29'
-controlled_vocabulary:
-  DeviceType:
-  - p-FET
-  - n-FET
-  - Inverter
-  - Co-integration
-  - Other
-  Method:
-  - TCAD
-  - Experiment
-  - Compact
-  - Hybrid
-  - Other
-  DocType:
-  - Journal
-  - Conference
-  - Thesis
-  - Patent
-  - Report
-  - Other
-  EnablerCategory:
-  - Contacts
-  - Gate Stack
-  - Electrostatics
-  - Geometry
-  - Transport
-  - Integration
-  - Reliability
-  - Other
-  TagConfidence:
-  - High
-  - Medium
-  - Low
-venue_hints:
-  IEEE_TED:
-  - IEEE Transactions on Electron Devices
-  - TED
-  IEEE_EDL:
-  - IEEE Electron Device Letters
-  - EDL
-  IEDM:
-  - International Electron Devices Meeting
-  - IEDM
-  VLSI:
-  - VLSI Symposium
-  - Symposium on VLSI Technology
-  - VLSI Technology
-  Nature:
-  - Nature Electronics
-  - Nature Communications
-  - Nature
-  - Scientific Reports
-  AIP_APS:
-  - Applied Physics Letters
-  - Journal of Applied Physics
-  - Physical Review
-  - Physical Review Applied
-  - Physical Review Materials
-  ACS:
-  - ACS Applied Materials & Interfaces
-  - ACS Photonics
-keyword_rules:
-  DeviceType:
-    p-FET:
-    - p-fet
-    - pfet
-    - p-channel
-    - p channel
-    - pmos
-    - pmos
-    - p-type transistor
-    - 2dhg
-    n-FET:
-    - n-fet
-    - nfet
-    - n-channel
-    - n channel
-    - nmos
-    - nmos
-    - n-type transistor
-    - 2deg
-    - hemt
-    - mosfet
-    Inverter:
-    - inverter
-    - ring oscillator
-    - logic gate
-    - cmos inverter
-    Co-integration:
-    - co-integration
-    - cointegration
-    - monolithic
-    - complementary
-    - cmos
-    - integration flow
-    - process integration
-    - co-fabrication
-    - cofabrication
-  Method:
-    TCAD:
-    - tcad
-    - sentaurus
-    - silvaco
-    - atlas
-    - victory device
-    - sdevice
-    - sde
-    - numerical simulation
-    - device simulation
-    Experiment:
-    - fabricat
-    - measured
-    - measurement
-    - experiment
-    - characterization
-    - xps
-    - tem
-    - afm
-    - hall
-    - tlm
-    Compact:
-    - compact model
-    - spice
-    - bsim
-    - asm
-    - model card
-    - verilog-a
-    - veriloga
-    Hybrid:
-    - hybrid
-    - physics-informed
-    - physics guided
-    - surrogate
-    - ml-assisted
-    - ai-assisted
-  EnablerCategory:
-    Contacts:
-    - ohmic
-    - contact resist
-    - contact resistance
-    - rc
-    - tlm
-    - regrowth
-    - metal stack
-    - anneal
-    - p-contact
-    - n-contact
-    Gate Stack:
-    - gate dielectric
-    - dielectric
-    - oxide
-    - al2o3
-    - hfo2
-    - sinx
-    - aln
-    - alon
-    - mis
-    - mos
-    - interface state
-    - dit
-    - passivation
-    Electrostatics:
-    - threshold
-    - vth
-    - e-mode
-    - enhancement-mode
-    - depletion
-    - electrostatic
-    - polarization engineering
-    - fixed charge
-    - charge control
-    - field plate
-    Geometry:
-    - finfet
-    - nanowire
-    - gaa
-    - gate-all-around
-    - recessed gate
-    - trench
-    - self-aligned
-    - lateral
-    - vertical
-    - spacer
-    Transport:
-    - mobility
-    - scattering
-    - ballistic
-    - tunneling
-    - tat
-    - trap-assisted
-    - leakage mechanism
-    - temperature dependence
-    - ron
-    - on-resistance
-    Integration:
-    - monolithic
-    - cmos
-    - co-integration
-    - cofabrication
-    - process flow
-    - beol
-    - interconnect
-    - co-design
-    - dtco
-    Reliability:
-    - bti
-    - tdbd
-    - hysteresis
-    - stability
-    - aging
-    - degradation
-    - trapping
-    - bias stress
-    - time-dependent
-verification_policy:
-  required_fields:
-  - Title
-  - Year
-  - URL
-  doi_preferred: true
-  accept_without_doi_if:
-  - publisher_landing_page
-  - official_thesis_repository
-  - patent_office_record
-  evidence_snippet_required_for_tags: true
-  dedup_priority:
-  - DOI
-  - normalized_title
-  - title_similarity_plus_year_author
+meta:
+  version: v1.1-nodeb
+  description: "Node B optimized deterministic keyword taxonomy for GaN CMOS logic demos and monolithic GaN IC platforms"
+
+# The tagging engine expects each tag to define include_any / exclude_any lists.
+# Matching is case-insensitive and uses substring checks on a concatenated text blob:
+# title + abstract + venue + container-title + keywords (if present)
+
+tags:
+
+  # -----------------------------
+  # Node B core tags (requested)
+  # -----------------------------
+  B2_cmos_logic_demo:
+    include_any:
+      - "cmos"
+      - "complementary"
+      - "inverter"
+      - "ring oscillator"
+      - "logic gate"
+      - "voltage transfer"
+      - "noise margin"
+      - "rail-to-rail"
+      - "vtc"
+    exclude_any:
+      - "review"
+      - "survey"
+      - "perspective"
+      - "roadmap"
+
+  B1_monolithic_ic_platform:
+    include_any:
+      - "monolithic"
+      - "integrated circuit"
+      - "power ic"
+      - "gan-on-soi"
+      - "soi"
+      - "deep trench"
+      - "trench isolation"
+      - "integration platform"
+      - "co-integrated"
+      - "power integrated circuit"
+    exclude_any:
+      - "review"
+      - "survey"
+      - "perspective"
+      - "roadmap"
+
+  B3_non_cmos_logic_context:
+    include_any:
+      - "depletion load"
+      - "resistive load"
+      - "rtl inverter"
+      - "pseudo-cmos"
+      - "logic inverter"
+    exclude_any: []
+
+  # -----------------------------
+  # Helpful meta tags (optional)
+  # -----------------------------
+  mentions_p_channel:
+    include_any:
+      - "p-channel"
+      - "p-type"
+      - "p-g an"
+      - "p-gan"
+      - "pfet"
+      - "p-fet"
+    exclude_any: []
+
+  mentions_n_channel:
+    include_any:
+      - "n-channel"
+      - "n-type"
+      - "nfet"
+      - "n-fet"
+      - "hemt"
+      - "2deg"
+    exclude_any: []
+
+  mentions_gan_on_soi:
+    include_any:
+      - "gan-on-soi"
+      - "soi"
+      - "silicon-on-insulator"
+    exclude_any: []
+
+  mentions_tcad:
+    include_any:
+      - "tcad"
+      - "sentaurus"
+      - "silvaco"
+      - "atlas"
+      - "device simulation"
+    exclude_any: []
+
+routing:
+
+  # Deterministic routing thresholds:
+  # - High confidence: strong Node B tag present (B1 or B2)
+  # - ReviewQueue: only B3 or weak/ambiguous Node B evidence
+  high_confidence_any:
+    - "B2_cmos_logic_demo"
+    - "B1_monolithic_ic_platform"
+
+  review_queue_any:
+    - "B3_non_cmos_logic_context"

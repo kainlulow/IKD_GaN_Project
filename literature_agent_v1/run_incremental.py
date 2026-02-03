@@ -1,200 +1,349 @@
-import datetime as dt
-import json, re
-import requests
+#!/usr/bin/env python3
+import json
+import os
+import re
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
+import requests
 import yaml
-from rapidfuzz import fuzz
 
-IKD_BASE = "."
-MASTER_XLSX = f"{IKD_BASE}/01_literature/IKD_Literature_Master.xlsx"
-REVIEW_XLSX = f"{IKD_BASE}/01_literature/IKD_ReviewQueue.xlsx"
-RUNLOG_CSV  = f"{IKD_BASE}/01_literature/IKD_RunLog.csv"
-TAXON_YAML  = f"{IKD_BASE}/00_taxonomy/IKD_Taxonomy.yaml"
-QUERIES_JSON= f"{IKD_BASE}/03_queries/queries.json"
-STATE_FILE  = "literature_agent_v1/state/last_run_timestamp.txt"
+ROOT = Path(__file__).resolve().parents[1]
+QUERIES_PATH = ROOT / "03_queries" / "queries.json"
+TAXONOMY_PATH = ROOT / "00_taxonomy" / "IKD_Taxonomy.yaml"
 
-CROSSREF = "https://api.crossref.org/works"
+LIT_DIR = ROOT / "01_literature"
+REPORT_DIR = ROOT / "02_reports"
+STATE_DIR = ROOT / "literature_agent_v1" / "state"
 
-def norm_title(t: str) -> str:
-    t = (t or "").lower().strip()
+MASTER_XLSX = LIT_DIR / "IKD_Literature_Master.xlsx"
+QUEUE_XLSX = LIT_DIR / "IKD_ReviewQueue.xlsx"
+RUNLOG_CSV = LIT_DIR / "IKD_RunLog.csv"
+
+LAST_TS_PATH = STATE_DIR / "last_run_timestamp.txt"
+
+CROSSREF_API = "https://api.crossref.org/works"
+
+DEFAULT_YEAR_MIN = 2010
+CROSSREF_ROWS_PER_QUERY = 200  # keep modest for GH actions
+REQUEST_TIMEOUT = 30
+
+# -----------------------------
+# Utilities
+# -----------------------------
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def normalize_title(t: str) -> str:
+    t = (t or "").strip().lower()
     t = re.sub(r"\s+", " ", t)
-    t = re.sub(r"[^a-z0-9 \-:/]", "", t)
+    t = re.sub(r"[^a-z0-9 \-:]", "", t)
     return t
 
-def read_last_run_date(default="2010-01-01"):
-    try:
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
-            s = f.read().strip()
-            return s if s else default
-    except FileNotFoundError:
-        return default
+def safe_join(parts: List[str], sep: str = " | ") -> str:
+    parts = [p.strip() for p in parts if isinstance(p, str) and p.strip()]
+    return sep.join(parts)
 
-def write_last_run_date(d):
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        f.write(d)
+def load_json(path: Path) -> Dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-def load_sheet(xlsx, sheet):
-    return pd.read_excel(xlsx, sheet_name=sheet)
+def load_yaml(path: Path) -> Dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
-def save_sheet(xlsx, sheet, df):
-    with pd.ExcelWriter(xlsx, engine="openpyxl", mode="w") as w:
-        df.to_excel(w, index=False, sheet_name=sheet)
+def ensure_dirs():
+    for d in [LIT_DIR, REPORT_DIR, STATE_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
 
-def log_run(time_window, sources, cand, acc, rev, notes=""):
-    log = pd.read_csv(RUNLOG_CSV)
-    log = pd.concat([log, pd.DataFrame([{
-        "RunDateTime": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "TimeWindow": time_window,
-        "SourcesQueried": sources,
-        "NewCandidates": cand,
-        "NewAccepted": acc,
-        "NewReviewQueue": rev,
-        "Notes": notes
-    }])], ignore_index=True)
-    log.to_csv(RUNLOG_CSV, index=False)
-
-def crossref_search(query: str, from_date: str, rows=20):
+# -----------------------------
+# Crossref Querying
+# -----------------------------
+def crossref_search(query: str, year_min: int) -> List[Dict]:
+    """
+    Query Crossref works. Deterministic order is not guaranteed by Crossref;
+    we rely on dedup + audit logging, and incremental time checkpoint.
+    """
     params = {
-        "query.bibliographic": query,
-        "filter": f"from-pub-date:{from_date}",
-        "rows": rows
+        "query": query,
+        "filter": f"from-pub-date:{year_min}-01-01",
+        "rows": CROSSREF_ROWS_PER_QUERY
     }
-    headers = {"User-Agent": "IKD-GaN-CMOS/1.0 (mailto:ikd-bot@users.noreply.github.com)"}
-    r = requests.get(CROSSREF, params=params, headers=headers, timeout=30)
+    r = requests.get(CROSSREF_API, params=params, timeout=REQUEST_TIMEOUT)
     r.raise_for_status()
-    return r.json()["message"]["items"]
+    data = r.json()
+    return data.get("message", {}).get("items", [])
 
-def deterministic_tag(title, abstract, tax):
-    text = f"{title} {abstract}".lower()
-    device = "Other"
-    for k, kws in tax["keyword_rules"]["DeviceType"].items():
-        if any(kw in text for kw in kws):
-            device = k; break
-    method = "Other"
-    for k, kws in tax["keyword_rules"]["Method"].items():
-        if any(kw in text for kw in kws):
-            method = k; break
-    enabler = "Other"
-    for k, kws in tax["keyword_rules"]["EnablerCategory"].items():
-        if any(kw in text for kw in kws):
-            enabler = k; break
-    return device, method, enabler
+def extract_record(item: Dict, bucket_id: str, query: str) -> Dict:
+    title = (item.get("title") or [""])[0]
+    doi = (item.get("DOI") or "").strip()
+    url = (item.get("URL") or "").strip()
+    issued = item.get("issued", {}).get("date-parts", [[]])
+    year = issued[0][0] if issued and issued[0] else None
 
-def is_dup(doi, title_norm, master_df):
-    doi_norm = (doi or "").lower().strip()
-    if doi_norm and (master_df["DOI"].fillna("").str.lower().str.strip() == doi_norm).any():
-        return True
-    # title similarity
-    for t in master_df["Title"].fillna("").map(norm_title).values:
-        if t and fuzz.ratio(title_norm, t) >= 95:
-            return True
+    container = ""
+    if item.get("container-title"):
+        container = item["container-title"][0]
+
+    authors = []
+    for a in item.get("author", []) or []:
+        given = a.get("given", "")
+        family = a.get("family", "")
+        name = (given + " " + family).strip()
+        if name:
+            authors.append(name)
+
+    abstract = item.get("abstract", "") or ""
+    abstract = re.sub(r"<[^>]+>", " ", abstract)  # strip jats tags if present
+    abstract = re.sub(r"\s+", " ", abstract).strip()
+
+    return {
+        "Title": title,
+        "Year": int(year) if isinstance(year, int) else "",
+        "Venue": container,
+        "DOI": doi,
+        "URL": url,
+        "Authors": "; ".join(authors),
+        "Abstract": abstract,
+        "BucketID": bucket_id,
+        "Query": query,
+        "RetrievedAtUTC": utc_now_iso()
+    }
+
+# -----------------------------
+# Tagging + Routing
+# -----------------------------
+@dataclass
+class TagRule:
+    include_any: List[str]
+    exclude_any: List[str]
+
+def compile_taxonomy(tax: Dict) -> Tuple[Dict[str, TagRule], List[str], List[str]]:
+    tags = {}
+    for tag_name, spec in (tax.get("tags") or {}).items():
+        tags[tag_name] = TagRule(
+            include_any=[s.lower() for s in (spec.get("include_any") or [])],
+            exclude_any=[s.lower() for s in (spec.get("exclude_any") or [])]
+        )
+
+    routing = tax.get("routing") or {}
+    high_any = routing.get("high_confidence_any") or []
+    review_any = routing.get("review_queue_any") or []
+    return tags, high_any, review_any
+
+def match_rule(text: str, rule: TagRule) -> bool:
+    tl = text.lower()
+    if rule.exclude_any:
+        for x in rule.exclude_any:
+            if x and x in tl:
+                return False
+    if rule.include_any:
+        return any((k in tl) for k in rule.include_any if k)
     return False
 
+def tag_record(rec: Dict, tag_rules: Dict[str, TagRule]) -> List[str]:
+    blob = safe_join([
+        rec.get("Title", ""),
+        rec.get("Abstract", ""),
+        rec.get("Venue", ""),
+        rec.get("BucketID", "")
+    ], sep=" || ")
+
+    matched = []
+    for tag_name, rule in tag_rules.items():
+        if match_rule(blob, rule):
+            matched.append(tag_name)
+    return matched
+
+def route(tags: List[str], high_any: List[str], review_any: List[str]) -> str:
+    if any(t in tags for t in high_any):
+        return "MASTER"
+    if any(t in tags for t in review_any):
+        return "REVIEW"
+    # If no node-B evidence, keep it out (deterministic drop)
+    return "DROP"
+
+# -----------------------------
+# IO: Excel + Logs
+# -----------------------------
+MASTER_COLUMNS = [
+    "Title", "Year", "Venue", "Authors", "DOI", "URL",
+    "Tags", "BucketID", "Query", "RetrievedAtUTC", "Abstract"
+]
+
+QUEUE_COLUMNS = MASTER_COLUMNS + ["Reason"]
+
+def read_existing(path: Path, cols: List[str]) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame(columns=cols)
+    df = pd.read_excel(path)
+    for c in cols:
+        if c not in df.columns:
+            df[c] = ""
+    return df[cols]
+
+def write_excel(path: Path, df: pd.DataFrame):
+    df.to_excel(path, index=False)
+
+def append_runlog(rows: List[Dict]):
+    if not rows:
+        return
+    df_new = pd.DataFrame(rows)
+    if RUNLOG_CSV.exists():
+        df_old = pd.read_csv(RUNLOG_CSV)
+        df = pd.concat([df_old, df_new], ignore_index=True)
+    else:
+        df = df_new
+    df.to_csv(RUNLOG_CSV, index=False)
+
+def load_last_ts() -> Optional[str]:
+    if not LAST_TS_PATH.exists():
+        return None
+    return LAST_TS_PATH.read_text(encoding="utf-8").strip() or None
+
+def save_last_ts(ts: str):
+    LAST_TS_PATH.write_text(ts, encoding="utf-8")
+
+# -----------------------------
+# Dedup
+# -----------------------------
+def dedup_records(records: List[Dict], existing_master: pd.DataFrame, existing_queue: pd.DataFrame) -> List[Dict]:
+    seen_doi = set(str(x).strip().lower() for x in pd.concat([existing_master["DOI"], existing_queue["DOI"]], ignore_index=True).fillna(""))
+    seen_title = set(normalize_title(x) for x in pd.concat([existing_master["Title"], existing_queue["Title"]], ignore_index=True).fillna(""))
+
+    out = []
+    for r in records:
+        doi = (r.get("DOI") or "").strip().lower()
+        nt = normalize_title(r.get("Title") or "")
+        if doi and doi in seen_doi:
+            continue
+        if nt and nt in seen_title:
+            continue
+        # update sets
+        if doi:
+            seen_doi.add(doi)
+        if nt:
+            seen_title.add(nt)
+        out.append(r)
+    return out
+
+# -----------------------------
+# Node-B Export
+# -----------------------------
+def export_node_b(master_df: pd.DataFrame, queue_df: pd.DataFrame):
+    out_dir = REPORT_DIR / "node_b"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    def has_b_tag(tag_str: str) -> bool:
+        ts = (tag_str or "").lower()
+        return ("b1_monolithic_ic_platform" in ts) or ("b2_cmos_logic_demo" in ts) or ("b3_non_cmos_logic_context" in ts)
+
+    m = master_df[master_df["Tags"].apply(has_b_tag)].copy()
+    q = queue_df[queue_df["Tags"].apply(has_b_tag)].copy()
+
+    write_excel(out_dir / "NodeB_HighConfidence.xlsx", m)
+    write_excel(out_dir / "NodeB_Candidates_ReviewQueue.xlsx", q)
+
+# -----------------------------
+# Main
+# -----------------------------
 def main():
-    tax = yaml.safe_load(open(TAXON_YAML, "r", encoding="utf-8"))
-    queries = json.load(open(QUERIES_JSON, "r", encoding="utf-8"))
+    ensure_dirs()
 
-    last_run_date = read_last_run_date(default="2010-01-01")
+    cfg = load_json(QUERIES_PATH)
+    tax = load_yaml(TAXONOMY_PATH)
 
-    master = load_sheet(MASTER_XLSX, "Master")
-    review = load_sheet(REVIEW_XLSX, "ReviewQueue")
+    tags_rules, high_any, review_any = compile_taxonomy(tax)
+    year_min = int(cfg.get("meta", {}).get("year_min", DEFAULT_YEAR_MIN))
 
-    candidates = []
-    for bucket, qlist in queries["buckets"].items():
-        for q in qlist:
-            candidates.extend(crossref_search(q, from_date=last_run_date, rows=20))
+    master_df = read_existing(MASTER_XLSX, MASTER_COLUMNS)
+    queue_df = read_existing(QUEUE_XLSX, QUEUE_COLUMNS)
 
-    new_candidates = len(candidates)
-    print("DEBUG candidates:", new_candidates)
+    all_new_records: List[Dict] = []
+    runlog_rows: List[Dict] = []
 
-    accepted, review_rows = [], []
+    for bucket in cfg.get("buckets", []):
+        bucket_id = bucket.get("bucket_id", "UNKNOWN_BUCKET")
+        for q in bucket.get("queries", []):
+            q = str(q).strip()
+            if not q:
+                continue
 
-    for it in candidates:
-        title = (it.get("title") or [""])[0]
-        if not title:
-            continue
-        issued = it.get("issued", {}).get("date-parts", [])
-        year = issued[0][0] if issued and issued[0] else None
+            try:
+                items = crossref_search(q, year_min=year_min)
+            except Exception as e:
+                runlog_rows.append({
+                    "RunAtUTC": utc_now_iso(),
+                    "BucketID": bucket_id,
+                    "Query": q,
+                    "Status": "ERROR",
+                    "Message": str(e)
+                })
+                continue
 
-        doi = it.get("DOI", "")
-        url = it.get("URL", "")
+            for it in items:
+                rec = extract_record(it, bucket_id=bucket_id, query=q)
+                # Deterministic validation: require DOI or URL
+                if not rec["DOI"] and not rec["URL"]:
+                    continue
+                # Basic year filter
+                if rec["Year"] and rec["Year"] < year_min:
+                    continue
+                all_new_records.append(rec)
 
-        # verification gate: must have DOI or URL
-        if not doi and not url:
-            continue
+            runlog_rows.append({
+                "RunAtUTC": utc_now_iso(),
+                "BucketID": bucket_id,
+                "Query": q,
+                "Status": "OK",
+                "ReturnedItems": len(items)
+            })
 
-        title_norm = norm_title(title)
-        if is_dup(doi, title_norm, master):
-            continue
+            time.sleep(1.0)  # be polite to Crossref
 
-        abstract = it.get("abstract", "") or ""
-        publisher = it.get("publisher") or ""
-        venue = ""
-        ct = it.get("container-title")
-        if isinstance(ct, list) and ct:
-            venue = ct[0]
-        elif isinstance(ct, str):
-            venue = ct
+    # Dedup against existing
+    all_new_records = dedup_records(all_new_records, master_df, queue_df)
 
-        authors = []
-        for a in it.get("author", [])[:12]:
-            fam = a.get("family", "")
-            giv = a.get("given", "")
-            nm = (fam + (", " + giv if giv else "")).strip()
-            if nm:
-                authors.append(nm)
+    # Tag + route
+    master_add = []
+    queue_add = []
 
-        device, method, enabler = deterministic_tag(title, abstract, tax)
-        conf = "High" if (device!="Other" and method!="Other" and enabler!="Other") else "Low"
+    for r in all_new_records:
+        matched_tags = tag_record(r, tags_rules)
+        r["Tags"] = "; ".join(matched_tags)
 
-        row = {
-            "RecordID": "",
-            "Title": title,
-            "Year": year,
-            "Publisher": publisher,
-            "Venue": venue,
-            "Authors": "; ".join(authors),
-            "Organizations": "",
-            "DOI": doi,
-            "URL": url,
-            "DocType": "Journal",
-            "DeviceType": device,
-            "Method": method,
-            "EnablerCategory": enabler,
-            "MaterialSystem": "",
-            "Node/Geometry": "",
-            "KeyContribution": "",
-            "EvidenceSnippet": title,
-            "TagConfidence": conf,
-            "AddedDate": dt.date.today().isoformat(),
-            "Notes": ""
-        }
-
-        if conf == "Low":
-            review_rows.append(row)
+        decision = route(matched_tags, high_any, review_any)
+        if decision == "MASTER":
+            master_add.append({k: r.get(k, "") for k in MASTER_COLUMNS})
+        elif decision == "REVIEW":
+            rr = {k: r.get(k, "") for k in QUEUE_COLUMNS}
+            rr["Reason"] = "Ambiguous Node-B evidence (B3-only or weak match)"
+            queue_add.append(rr)
         else:
-            accepted.append(row)
+            # DROP silently (still auditable via RunLog OK lines + results count)
+            pass
 
-    if accepted:
-        master = pd.concat([master, pd.DataFrame(accepted)], ignore_index=True)
-        save_sheet(MASTER_XLSX, "Master", master)
+    if master_add:
+        master_df = pd.concat([master_df, pd.DataFrame(master_add)], ignore_index=True)
 
-    if review_rows:
-        review = pd.concat([review, pd.DataFrame(review_rows)], ignore_index=True)
-        save_sheet(REVIEW_XLSX, "ReviewQueue", review)
+    if queue_add:
+        queue_df = pd.concat([queue_df, pd.DataFrame(queue_add)], ignore_index=True)
 
-    log_run(
-        time_window=f"since {last_run_date}",
-        sources="Crossref API (metadata)",
-        cand=new_candidates,
-        acc=len(accepted),
-        rev=len(review_rows),
-        notes="Deterministic V1 run"
-    )
-    print("DEBUG accepted:", len(accepted), "review:", len(review_rows))
+    write_excel(MASTER_XLSX, master_df)
+    write_excel(QUEUE_XLSX, queue_df)
+    append_runlog(runlog_rows)
 
-    # update checkpoint
-    write_last_run_date(dt.date.today().isoformat())
+    export_node_b(master_df, queue_df)
+
+    save_last_ts(utc_now_iso())
+    print("Run complete.")
+    print("Master:", MASTER_XLSX)
+    print("Review:", QUEUE_XLSX)
+    print("Reports:", REPORT_DIR / "node_b")
 
 if __name__ == "__main__":
     main()

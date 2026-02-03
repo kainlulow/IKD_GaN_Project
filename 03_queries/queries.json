@@ -46,4 +46,27 @@
     "Thesis repositories",
     "Patents"
   ]
+  {
+  "bucket_id": "NODE_B_GaN_CMOS_and_Monolithic_IC",
+  "description": "Node B discovery: GaN CMOS demos (inverter/logic/RO) + monolithic GaN IC platforms (GaN-on-SOI, all-GaN IC)",
+  "queries": [
+    "\"GaN CMOS\" inverter",
+    "\"complementary\" GaN inverter",
+    "\"GaN\" \"ring oscillator\"",
+    "\"GaN logic\" inverter",
+    "\"all-GaN\" integrated circuit",
+    "\"monolithic\" GaN integrated circuit",
+    "\"GaN-on-SOI\" integrated circuit",
+    "\"GaN-on-SOI\" monolithically integrated",
+    "\"GaN power IC\" monolithic",
+    "\"GaN IC\" logic",
+    "\"GaN\" complementary logic"
+  ],
+  "policy": {
+    "year_min": 2010,
+    "require_doi_or_url": true,
+    "prefer_venues": ["IEDM", "VLSI", "IEDL", "TED", "ISPSD"]
+  }
+}
+
 }

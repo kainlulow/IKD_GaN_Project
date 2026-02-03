@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -33,11 +34,41 @@ DEFAULT_YEAR_MIN = 2010
 CROSSREF_ROWS_PER_QUERY = 200  # default, override via queries.json meta.crossref.rows_per_page
 REQUEST_TIMEOUT = 30
 
+# Global debug flag (set in main)
+DEBUG = False
+
 # -----------------------------
 # Utilities
 # -----------------------------
+def has_gan_signal(rec: Dict) -> bool:
+    """
+    Hard domain gate: paper must explicitly mention GaN.
+    Uses ONLY paper metadata (not query text).
+    """
+    blob = safe_join([
+        rec.get("Title", ""),
+        rec.get("Abstract", ""),
+        rec.get("Venue", "")
+    ], sep=" || ").lower()
+
+    return (
+        "gan" in blob or
+        "gallium nitride" in blob or
+        "algan" in blob or
+        "ingan" in blob or
+        "gan/" in blob
+    )
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+def ts_local_hms() -> str:
+    return datetime.now().strftime("%H:%M:%S")
+
+def log(msg: str):
+    """Debug logger (real-time)."""
+    if DEBUG:
+        print(f"[{ts_local_hms()}] {msg}", flush=True)
 
 def normalize_title(t: str) -> str:
     t = (t or "").strip().lower()
@@ -79,6 +110,8 @@ def crossref_search_cursor(query: str, year_min: int, rows: int, max_items: int)
     out: List[Dict] = []
     fetched = 0
 
+    log(f"Crossref START | query='{query}' | year_min={year_min} | rows={rows} | cap={max_items}")
+
     while True:
         params = {
             "query": query,
@@ -98,7 +131,12 @@ def crossref_search_cursor(query: str, year_min: int, rows: int, max_items: int)
         out.extend(items)
         fetched += len(items)
 
+        # Print every page worth of progress
+        if DEBUG:
+            log(f"  fetched={fetched} (last_page={len(items)})")
+
         if fetched >= max_items:
+            log("  reached cap max_items; stopping pagination")
             break
 
         if not next_cursor or next_cursor == cursor:
@@ -106,6 +144,7 @@ def crossref_search_cursor(query: str, year_min: int, rows: int, max_items: int)
 
         cursor = next_cursor
 
+    log(f"Crossref END | total={len(out)}")
     return out
 
 def extract_record(item: Dict, bucket_id: str, query: str) -> Dict:
@@ -150,9 +189,6 @@ def _oa_polite_sleep(cfg: Dict):
     time.sleep(delay)
 
 def openalex_get_by_doi(doi: str) -> Optional[Dict]:
-    """
-    OpenAlex DOI lookup. Returns first matching work or None.
-    """
     doi = (doi or "").strip().lower()
     if not doi:
         return None
@@ -163,9 +199,6 @@ def openalex_get_by_doi(doi: str) -> Optional[Dict]:
     return res[0] if res else None
 
 def openalex_fetch_work_by_id(work_id_url: str) -> Optional[Dict]:
-    """
-    work_id_url is typically like https://openalex.org/W...
-    """
     if not work_id_url:
         return None
     r = requests.get(work_id_url, timeout=REQUEST_TIMEOUT)
@@ -173,10 +206,6 @@ def openalex_fetch_work_by_id(work_id_url: str) -> Optional[Dict]:
     return r.json()
 
 def openalex_fetch_citers(work_id: str, max_citers: int) -> List[Dict]:
-    """
-    Fetch works that cite the given OpenAlex work id.
-    Deterministic cap max_citers.
-    """
     out: List[Dict] = []
     cursor = "*"
     per_page = 200
@@ -221,7 +250,7 @@ def _openalex_abstract_from_inverted(inv: Optional[Dict]) -> str:
 def extract_record_openalex(work: Dict, bucket_id: str, query: str) -> Dict:
     title = work.get("title", "") or ""
     year = work.get("publication_year", "") or ""
-    doi_url = (work.get("doi") or "").strip()  # https://doi.org/...
+    doi_url = (work.get("doi") or "").strip()
     doi = doi_url.replace("https://doi.org/", "").strip()
 
     host = work.get("host_venue", {}) or {}
@@ -253,12 +282,9 @@ def extract_record_openalex(work: Dict, bucket_id: str, query: str) -> Dict:
     }
 
 def openalex_citation_expand(cfg: Dict, seed_records: List[Dict]) -> List[Dict]:
-    """
-    Expand via OpenAlex citation graph using DOIs from discovered candidates.
-    No hardcoded anchors; fully automated.
-    """
     oa_cfg = cfg.get("meta", {}).get("openalex", {}) or {}
     if not oa_cfg.get("enabled", False):
+        log("[PASS 3] OpenAlex disabled")
         return []
 
     max_seed = int(oa_cfg.get("max_seed_papers_per_run", 300))
@@ -268,39 +294,51 @@ def openalex_citation_expand(cfg: Dict, seed_records: List[Dict]) -> List[Dict]:
     seeds = [r for r in seed_records if r.get("DOI")]
     seeds = seeds[:max_seed]
 
-    expanded: List[Dict] = []
+    log(f"[PASS 3] OpenAlex START | seeds={len(seeds)} | max_refs={max_refs} | max_citers={max_citers}")
 
-    for r in seeds:
+    expanded: List[Dict] = []
+    for idx, r in enumerate(seeds, start=1):
         doi = r["DOI"]
+        log(f"[PASS 3] Seed {idx}/{len(seeds)} | DOI={doi}")
+
         try:
             w = openalex_get_by_doi(doi)
-        except Exception:
+        except Exception as e:
+            log(f"  OpenAlex DOI lookup ERROR | DOI={doi} | {e}")
             continue
         if not w:
+            log(f"  OpenAlex DOI lookup MISS | DOI={doi}")
             continue
 
-        # Backward citations: referenced works
+        # Backward citations
         ref_ids = (w.get("referenced_works") or [])[:max_refs]
+        added_refs = 0
         for ref_id in ref_ids:
             try:
                 rw = openalex_fetch_work_by_id(ref_id)
                 if rw:
                     expanded.append(extract_record_openalex(rw, bucket_id="OA_REF", query=doi))
+                    added_refs += 1
             except Exception:
                 pass
+        log(f"  refs processed={len(ref_ids)} | added={added_refs}")
 
         _oa_polite_sleep(cfg)
 
-        # Forward citations: works that cite this work
+        # Forward citations
+        added_citers = 0
         try:
             citers = openalex_fetch_citers(w.get("id", ""), max_citers=max_citers)
             for c in citers:
                 expanded.append(extract_record_openalex(c, bucket_id="OA_CITER", query=doi))
-        except Exception:
-            pass
+                added_citers += 1
+            log(f"  citers fetched={len(citers)} | added={added_citers}")
+        except Exception as e:
+            log(f"  citers ERROR | DOI={doi} | {e}")
 
         _oa_polite_sleep(cfg)
 
+    log(f"[PASS 3] OpenAlex END | added_records={len(expanded)}")
     return expanded
 
 # -----------------------------
@@ -353,7 +391,6 @@ def route(tags: List[str], high_any: List[str], review_any: List[str]) -> str:
         return "MASTER"
     if any(t in tags for t in review_any):
         return "REVIEW"
-    # If no node-B evidence, keep it out (deterministic drop)
     return "DROP"
 
 # -----------------------------
@@ -363,7 +400,6 @@ MASTER_COLUMNS = [
     "Title", "Year", "Venue", "Authors", "DOI", "URL",
     "Tags", "BucketID", "Query", "RetrievedAtUTC", "Abstract"
 ]
-
 QUEUE_COLUMNS = MASTER_COLUMNS + ["Reason"]
 
 def read_existing(path: Path, cols: List[str]) -> pd.DataFrame:
@@ -440,6 +476,13 @@ def export_node_b(master_df: pd.DataFrame, queue_df: pd.DataFrame):
 # Main
 # -----------------------------
 def main():
+    global DEBUG
+
+    parser = argparse.ArgumentParser(description="Deterministic literature agent (Node B optimized)")
+    parser.add_argument("--debug", action="store_true", help="Enable real-time progress logging")
+    args = parser.parse_args()
+    DEBUG = bool(args.debug)
+
     ensure_dirs()
 
     cfg = load_json(QUERIES_PATH)
@@ -448,7 +491,6 @@ def main():
     tags_rules, high_any, review_any = compile_taxonomy(tax)
     year_min = int(cfg.get("meta", {}).get("year_min", DEFAULT_YEAR_MIN))
 
-    # Crossref paging controls
     crossref_meta = cfg.get("meta", {}).get("crossref", {}) or {}
     rows_per_page = int(crossref_meta.get("rows_per_page", CROSSREF_ROWS_PER_QUERY))
     max_items_per_query = int(crossref_meta.get("max_items_per_query", 2000))
@@ -460,9 +502,13 @@ def main():
     all_new_records: List[Dict] = []
     runlog_rows: List[Dict] = []
 
+    log("=== RUN START ===")
+    log(f"year_min={year_min} | rows_per_page={rows_per_page} | max_items_per_query={max_items_per_query}")
+
     # -----------------------------
     # Pass 1: Bucket keyword discovery
     # -----------------------------
+    log("[PASS 1] Bucket keyword discovery START")
     for bucket in cfg.get("buckets", []):
         bucket_id = bucket.get("bucket_id", "UNKNOWN_BUCKET")
         for q in bucket.get("queries", []):
@@ -470,6 +516,7 @@ def main():
             if not q:
                 continue
 
+            log(f"[PASS 1] Bucket={bucket_id} | Query={q}")
             try:
                 items = crossref_search_cursor(q, year_min=year_min, rows=rows_per_page, max_items=max_items_per_query)
             except Exception as e:
@@ -480,6 +527,7 @@ def main():
                     "Status": "ERROR",
                     "Message": str(e)
                 })
+                log(f"[PASS 1] ERROR | Bucket={bucket_id} | Query={q} | {e}")
                 continue
 
             for it in items:
@@ -497,18 +545,22 @@ def main():
                 "Status": "OK",
                 "ReturnedItems": len(items)
             })
-
+            log(f"[PASS 1] DONE | ReturnedItems={len(items)}")
             time.sleep(crossref_delay)
+    log("[PASS 1] END")
 
     # -----------------------------
-    # Pass 2: Venue sweeps (recall boost for flagship venues)
+    # Pass 2: Venue sweeps
     # -----------------------------
+    log("[PASS 2] Venue sweeps START")
     for sweep in cfg.get("meta", {}).get("venue_sweeps", []) or []:
         venue_id = sweep.get("venue_id", "VENUE")
         sweep_year_min = int(sweep.get("year_min", year_min))
         sweep_max_items = int(sweep.get("max_items", 5000))
         for term in (sweep.get("query_terms", []) or []):
             q = f"\"{term}\""
+
+            log(f"[PASS 2] Venue={venue_id} | Term={term} | Query={q}")
             try:
                 items = crossref_search_cursor(q, year_min=sweep_year_min, rows=rows_per_page, max_items=sweep_max_items)
             except Exception as e:
@@ -519,6 +571,7 @@ def main():
                     "Status": "ERROR",
                     "Message": str(e)
                 })
+                log(f"[PASS 2] ERROR | Venue={venue_id} | Query={q} | {e}")
                 continue
 
             for it in items:
@@ -536,18 +589,23 @@ def main():
                 "Status": "OK",
                 "ReturnedItems": len(items)
             })
-
+            log(f"[PASS 2] DONE | Venue={venue_id} | ReturnedItems={len(items)}")
             time.sleep(crossref_delay)
+    log("[PASS 2] END")
 
     # Dedup against existing
+    pre_dedup = len(all_new_records)
     all_new_records = dedup_records(all_new_records, master_df, queue_df)
+    log(f"[DEDUP-1] {pre_dedup} -> {len(all_new_records)} new records after dedup against existing")
 
     # -----------------------------
-    # Pass 3: OpenAlex citation expansion (automatic recall for highly relevant papers)
+    # Pass 3: OpenAlex expansion
     # -----------------------------
     try:
+        log("[PASS 3] OpenAlex expansion START")
         oa_records = openalex_citation_expand(cfg, all_new_records)
         all_new_records.extend(oa_records)
+        log(f"[PASS 3] OpenAlex added={len(oa_records)}")
     except Exception as e:
         runlog_rows.append({
             "RunAtUTC": utc_now_iso(),
@@ -556,11 +614,24 @@ def main():
             "Status": "ERROR",
             "Message": str(e)
         })
+        log(f"[PASS 3] ERROR | {e}")
 
     # Dedup again after expansion
+    pre_dedup2 = len(all_new_records)
     all_new_records = dedup_records(all_new_records, master_df, queue_df)
+    log(f"[DEDUP-2] {pre_dedup2} -> {len(all_new_records)} new records after OpenAlex dedup")
+
+    # -----------------------------
+    # Hard domain gate: GaN must be present
+    # -----------------------------
+    pre_gate = len(all_new_records)
+    all_new_records = [r for r in all_new_records if has_gan_signal(r)]
+    dropped = pre_gate - len(all_new_records)
+
+    log(f"[GATE] GaN-signal enforced | kept={len(all_new_records)} | dropped={dropped}")
 
     # Tag + route
+    log(f"[ROUTING] Tagging & routing {len(all_new_records)} records")
     master_add = []
     queue_add = []
 
@@ -576,7 +647,10 @@ def main():
             rr["Reason"] = "Ambiguous Node-B evidence (B3-only or weak match)"
             queue_add.append(rr)
         else:
-            pass  # DROP
+            pass
+
+    dropped = len(all_new_records) - len(master_add) - len(queue_add)
+    log(f"[ROUTING] MASTER={len(master_add)} | REVIEW={len(queue_add)} | DROP={dropped}")
 
     if master_add:
         master_df = pd.concat([master_df, pd.DataFrame(master_add)], ignore_index=True)
@@ -591,6 +665,8 @@ def main():
     export_node_b(master_df, queue_df)
 
     save_last_ts(utc_now_iso())
+
+    log("=== RUN END ===")
     print("Run complete.")
     print("Master:", MASTER_XLSX)
     print("Review:", QUEUE_XLSX)

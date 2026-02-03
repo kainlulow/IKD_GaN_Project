@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "v1.2-gan-cmos-only",
+    "version": "v1.3-gan-cmos-A+B",
     "year_min": 2010,
 
     "crossref": {
@@ -14,7 +14,7 @@
         "venue_id": "IEDM",
         "query_terms": [
           "GaN CMOS",
-          "GaN complementary",
+          "GaN complementary logic",
           "complementary GaN"
         ],
         "year_min": 2010,
@@ -24,7 +24,7 @@
         "venue_id": "VLSI",
         "query_terms": [
           "GaN CMOS",
-          "GaN complementary",
+          "GaN complementary logic",
           "complementary GaN"
         ],
         "year_min": 2010,
@@ -34,7 +34,7 @@
         "venue_id": "TED",
         "query_terms": [
           "GaN CMOS",
-          "GaN complementary",
+          "GaN complementary logic",
           "complementary GaN"
         ],
         "year_min": 2010,
@@ -44,7 +44,7 @@
         "venue_id": "EDL",
         "query_terms": [
           "GaN CMOS",
-          "GaN complementary",
+          "GaN complementary logic",
           "complementary GaN"
         ],
         "year_min": 2010,
@@ -63,25 +63,52 @@
 
   "buckets": [
     {
-      "bucket_id": "GaN_CMOS_ONLY",
-      "description": "GaN CMOS / complementary logic only: CMOS, complementary, inverters, logic gates, ring oscillators, VTC/noise margin/delay; include p/n device pairing signals",
+      "bucket_id": "GaN_CMOS_A_Circuit_Demos",
+      "description": "GaN CMOS / complementary logic circuit demos: inverter, gates, ring oscillator, VTC/noise margin, propagation delay",
       "queries": [
-        "\"GaN CMOS\"",
+        "\"GaN CMOS\" inverter",
         "\"GaN\" CMOS inverter",
-        "\"GaN\" complementary inverter",
         "\"complementary\" GaN inverter",
-        "\"GaN\" complementary logic",
+        "\"GaN\" complementary inverter",
         "\"GaN\" complementary logic circuits",
+        "\"GaN\" complementary logic",
         "\"GaN\" \"logic gate\" complementary",
         "\"GaN\" \"ring oscillator\" complementary",
-        "\"GaN\" \"noise margin\" inverter",
         "\"GaN\" \"voltage transfer\" inverter",
+        "\"GaN\" \"noise margin\" inverter",
         "\"GaN\" inverter propagation delay",
-        "\"p-channel\" GaN AND inverter",
-        "\"p-type\" GaN AND inverter",
-        "\"p-GaN\" inverter",
-        "\"p-channel\" GaN CMOS",
-        "\"p-channel\" GaN complementary"
+        "\"GaN\" short propagation delay",
+        "\"all-GaN\" CMOS inverter",
+        "\"monolithic\" GaN CMOS"
+      ]
+    },
+    {
+      "bucket_id": "GaN_CMOS_B_Enablers",
+      "description": "GaN CMOS enablers without full circuits: p-FET / p-channel GaN, n-FET pairing, threshold engineering, normally-off, co-integration, CMOS platform terms",
+      "queries": [
+        "\"GaN CMOS\"",
+        "\"complementary\" GaN transistor",
+        "\"complementary\" GaN FET",
+        "\"GaN\" p-channel transistor",
+        "\"GaN\" p-channel FET",
+        "\"p-channel\" GaN",
+        "\"p-type\" GaN FET",
+        "\"p-GaN\" transistor",
+        "\"p-GaN\" FET",
+        "\"p-channel\" GaN MOSFET",
+        "\"GaN\" n-channel MOSFET",
+        "\"GaN\" CMOS technology",
+        "\"GaN\" complementary technology",
+        "\"GaN\" complementary integration",
+        "\"GaN\" threshold voltage engineering complementary",
+        "\"normally-off\" GaN p-channel",
+        "\"normally-off\" GaN complementary",
+        "\"enhancement-mode\" GaN p-channel",
+        "\"enhancement-mode\" GaN complementary",
+        "\"gate stack\" GaN p-channel",
+        "\"Mg\" doped p-GaN transistor",
+        "\"polarization\" GaN p-channel transistor",
+        "\"polarization\" enhanced complementary GaN"
       ]
     }
   ]

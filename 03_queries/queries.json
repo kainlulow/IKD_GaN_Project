@@ -1,17 +1,73 @@
 {
   "meta": {
-    "version": "v1.1-nodeb",
-    "description": "Node B optimized deterministic literature discovery queries for GaN CMOS demos & monolithic GaN IC platforms",
-    "year_min": 2010
+    "version": "v1.2-nodeb",
+    "year_min": 2010,
+
+    "crossref": {
+      "rows_per_page": 200,
+      "max_items_per_query": 2000,
+      "polite_delay_sec": 1.0
+    },
+
+    "venue_sweeps": [
+      {
+        "venue_id": "IEDM",
+        "query_terms": [
+          "International Electron Devices Meeting",
+          "IEEE International Electron Devices Meeting",
+          "IEDM"
+        ],
+        "year_min": 2010,
+        "max_items": 8000
+      },
+      {
+        "venue_id": "VLSI",
+        "query_terms": [
+          "Symposium on VLSI Technology",
+          "IEEE Symposium on VLSI Technology",
+          "VLSI Technology"
+        ],
+        "year_min": 2010,
+        "max_items": 8000
+      },
+      {
+        "venue_id": "TED",
+        "query_terms": [
+          "IEEE Transactions on Electron Devices"
+        ],
+        "year_min": 2010,
+        "max_items": 8000
+      },
+      {
+        "venue_id": "EDL",
+        "query_terms": [
+          "IEEE Electron Device Letters"
+        ],
+        "year_min": 2010,
+        "max_items": 8000
+      }
+    ],
+
+    "openalex": {
+      "enabled": true,
+      "max_seed_papers_per_run": 300,
+      "max_refs_per_seed": 80,
+      "max_citers_per_seed": 80,
+      "polite_delay_sec": 0.2
+    }
   },
+
   "buckets": [
     {
       "bucket_id": "NODE_B2_GaN_CMOS_Logic_Demos",
-      "description": "True complementary CMOS logic demos: inverter / logic gate / ring oscillator; includes key metric terms",
+      "description": "True complementary logic demos (CMOS-equivalent): inverter / logic gates / ring oscillator / VTC / noise margin / delay",
       "queries": [
+        "\"GaN\" complementary logic circuits",
+        "\"GaN\" complementary logic",
         "\"GaN CMOS\" inverter",
         "\"complementary\" GaN inverter",
         "\"p-channel\" GaN inverter",
+        "\"GaN\" inverter propagation delay",
         "\"GaN\" \"ring oscillator\"",
         "\"GaN\" \"logic gate\"",
         "\"GaN\" \"voltage transfer\" inverter",
@@ -22,22 +78,24 @@
     },
     {
       "bucket_id": "NODE_B1_Monolithic_GaN_IC_Platforms",
-      "description": "Monolithic GaN IC platform/enablers: GaN-on-SOI, deep trench isolation, integrated GaN power IC components, logic on GaN",
+      "description": "Monolithic GaN IC platforms/enablers: GaN-on-SOI, isolation, integrated GaN power IC components, logic-on-GaN integration",
       "queries": [
         "\"GaN-on-SOI\" integrated circuit",
         "\"GaN-on-SOI\" monolithically integrated",
+        "\"GaN on SOI\" integrated circuit",
         "\"monolithic\" GaN integrated circuit",
         "\"all-GaN\" integrated circuit",
         "\"GaN power IC\" monolithic",
-        "\"deep trench\" GaN isolation",
         "\"GaN\" \"power integrated circuit\"",
-        "\"GaN\" \"integrated driver\" IC",
-        "\"GaN\" \"monolithic integration\""
+        "\"GaN\" \"monolithic integration\"",
+        "\"deep trench\" isolation GaN",
+        "\"trench isolation\" GaN",
+        "\"GaN\" \"integrated driver\" IC"
       ]
     },
     {
       "bucket_id": "NODE_B3_Near_CMOS_Context",
-      "description": "Near-CMOS / non-true-CMOS logic context (useful for motivation but should not be mistaken as B2)",
+      "description": "Near-CMOS / non-true-CMOS logic context (for motivation): depletion-load / resistive-load / pseudo-CMOS / RTL",
       "queries": [
         "\"GaN\" \"depletion load\" inverter",
         "\"GaN\" \"resistive load\" inverter",

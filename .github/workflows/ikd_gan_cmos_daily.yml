@@ -5,6 +5,9 @@ on:
     - cron: "0 2 * * *"   # daily 02:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   run-agent:
     runs-on: ubuntu-latest
@@ -26,10 +29,29 @@ jobs:
         run: |
           python literature_agent_v1/run_incremental.py
 
+      # Always upload artifacts so you can retrieve outputs even if push is blocked.
+      - name: Upload outputs (artifacts)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ikd-nodeb-outputs
+          path: |
+            01_literature/IKD_Literature_Master.xlsx
+            01_literature/IKD_ReviewQueue.xlsx
+            01_literature/IKD_RunLog.csv
+            02_reports/node_b/NodeB_HighConfidence.xlsx
+            02_reports/node_b/NodeB_Candidates_ReviewQueue.xlsx
+
       - name: Commit updated outputs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add 01_literature 02_reports literature_agent_v1/state || true
           git commit -m "Auto-update literature outputs (Node B)" || echo "No changes"
+
+      # Push may fail due to org policy / fork token restrictions.
+      # Don't fail the whole run: outputs are already uploaded as artifacts.
+      - name: Push changes
+        continue-on-error: true
+        run: |
           git push

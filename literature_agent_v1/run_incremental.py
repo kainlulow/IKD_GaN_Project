@@ -27,9 +27,10 @@ RUNLOG_CSV = LIT_DIR / "IKD_RunLog.csv"
 LAST_TS_PATH = STATE_DIR / "last_run_timestamp.txt"
 
 CROSSREF_API = "https://api.crossref.org/works"
+OPENALEX_API = "https://api.openalex.org/works"
 
 DEFAULT_YEAR_MIN = 2010
-CROSSREF_ROWS_PER_QUERY = 200  # keep modest for GH actions
+CROSSREF_ROWS_PER_QUERY = 200  # default, override via queries.json meta.crossref.rows_per_page
 REQUEST_TIMEOUT = 30
 
 # -----------------------------
@@ -60,23 +61,52 @@ def ensure_dirs():
     for d in [LIT_DIR, REPORT_DIR, STATE_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
+def _strip_jats(text: str) -> str:
+    text = text or ""
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
 # -----------------------------
-# Crossref Querying
+# Crossref Querying (Cursor paging)
 # -----------------------------
-def crossref_search(query: str, year_min: int) -> List[Dict]:
+def crossref_search_cursor(query: str, year_min: int, rows: int, max_items: int) -> List[Dict]:
     """
-    Query Crossref works. Deterministic order is not guaranteed by Crossref;
-    we rely on dedup + audit logging, and incremental time checkpoint.
+    Cursor-based pagination for Crossref to avoid missing results beyond first page.
+    Deterministic caps: rows per page + max_items per query.
     """
-    params = {
-        "query": query,
-        "filter": f"from-pub-date:{year_min}-01-01",
-        "rows": CROSSREF_ROWS_PER_QUERY
-    }
-    r = requests.get(CROSSREF_API, params=params, timeout=REQUEST_TIMEOUT)
-    r.raise_for_status()
-    data = r.json()
-    return data.get("message", {}).get("items", [])
+    cursor = "*"
+    out: List[Dict] = []
+    fetched = 0
+
+    while True:
+        params = {
+            "query": query,
+            "filter": f"from-pub-date:{year_min}-01-01",
+            "rows": rows,
+            "cursor": cursor,
+        }
+        r = requests.get(CROSSREF_API, params=params, timeout=REQUEST_TIMEOUT)
+        r.raise_for_status()
+        msg = r.json().get("message", {}) or {}
+        items = msg.get("items", []) or []
+        next_cursor = msg.get("next-cursor", None)
+
+        if not items:
+            break
+
+        out.extend(items)
+        fetched += len(items)
+
+        if fetched >= max_items:
+            break
+
+        if not next_cursor or next_cursor == cursor:
+            break
+
+        cursor = next_cursor
+
+    return out
 
 def extract_record(item: Dict, bucket_id: str, query: str) -> Dict:
     title = (item.get("title") or [""])[0]
@@ -97,9 +127,7 @@ def extract_record(item: Dict, bucket_id: str, query: str) -> Dict:
         if name:
             authors.append(name)
 
-    abstract = item.get("abstract", "") or ""
-    abstract = re.sub(r"<[^>]+>", " ", abstract)  # strip jats tags if present
-    abstract = re.sub(r"\s+", " ", abstract).strip()
+    abstract = _strip_jats(item.get("abstract", "") or "")
 
     return {
         "Title": title,
@@ -113,6 +141,167 @@ def extract_record(item: Dict, bucket_id: str, query: str) -> Dict:
         "Query": query,
         "RetrievedAtUTC": utc_now_iso()
     }
+
+# -----------------------------
+# OpenAlex (Citation expansion)
+# -----------------------------
+def _oa_polite_sleep(cfg: Dict):
+    delay = float(cfg.get("meta", {}).get("openalex", {}).get("polite_delay_sec", 0.2))
+    time.sleep(delay)
+
+def openalex_get_by_doi(doi: str) -> Optional[Dict]:
+    """
+    OpenAlex DOI lookup. Returns first matching work or None.
+    """
+    doi = (doi or "").strip().lower()
+    if not doi:
+        return None
+    params = {"filter": f"doi:https://doi.org/{doi}"}
+    r = requests.get(OPENALEX_API, params=params, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+    res = r.json().get("results", []) or []
+    return res[0] if res else None
+
+def openalex_fetch_work_by_id(work_id_url: str) -> Optional[Dict]:
+    """
+    work_id_url is typically like https://openalex.org/W...
+    """
+    if not work_id_url:
+        return None
+    r = requests.get(work_id_url, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+    return r.json()
+
+def openalex_fetch_citers(work_id: str, max_citers: int) -> List[Dict]:
+    """
+    Fetch works that cite the given OpenAlex work id.
+    Deterministic cap max_citers.
+    """
+    out: List[Dict] = []
+    cursor = "*"
+    per_page = 200
+
+    while True:
+        params = {
+            "filter": f"cites:{work_id}",
+            "per-page": per_page,
+            "cursor": cursor
+        }
+        r = requests.get(OPENALEX_API, params=params, timeout=REQUEST_TIMEOUT)
+        r.raise_for_status()
+        msg = r.json() or {}
+        results = msg.get("results", []) or []
+        next_cursor = (msg.get("meta", {}) or {}).get("next_cursor", None)
+
+        if not results:
+            break
+
+        out.extend(results)
+        if len(out) >= max_citers:
+            out = out[:max_citers]
+            break
+
+        if not next_cursor or next_cursor == cursor:
+            break
+
+        cursor = next_cursor
+
+    return out
+
+def _openalex_abstract_from_inverted(inv: Optional[Dict]) -> str:
+    if not isinstance(inv, dict):
+        return ""
+    tokens = []
+    for word, positions in inv.items():
+        for p in positions:
+            tokens.append((p, word))
+    tokens.sort(key=lambda x: x[0])
+    return " ".join(w for _, w in tokens)
+
+def extract_record_openalex(work: Dict, bucket_id: str, query: str) -> Dict:
+    title = work.get("title", "") or ""
+    year = work.get("publication_year", "") or ""
+    doi_url = (work.get("doi") or "").strip()  # https://doi.org/...
+    doi = doi_url.replace("https://doi.org/", "").strip()
+
+    host = work.get("host_venue", {}) or {}
+    venue = host.get("display_name", "") or ""
+
+    authors = []
+    for a in (work.get("authorships") or []):
+        au = a.get("author", {}) or {}
+        name = au.get("display_name", "") or ""
+        if name:
+            authors.append(name)
+
+    abstract = _openalex_abstract_from_inverted(work.get("abstract_inverted_index"))
+
+    url = work.get("id", "") or ""
+    url_out = doi_url if doi_url else url
+
+    return {
+        "Title": title,
+        "Year": int(year) if str(year).isdigit() else "",
+        "Venue": venue,
+        "DOI": doi,
+        "URL": url_out,
+        "Authors": "; ".join(authors),
+        "Abstract": abstract,
+        "BucketID": bucket_id,
+        "Query": query,
+        "RetrievedAtUTC": utc_now_iso()
+    }
+
+def openalex_citation_expand(cfg: Dict, seed_records: List[Dict]) -> List[Dict]:
+    """
+    Expand via OpenAlex citation graph using DOIs from discovered candidates.
+    No hardcoded anchors; fully automated.
+    """
+    oa_cfg = cfg.get("meta", {}).get("openalex", {}) or {}
+    if not oa_cfg.get("enabled", False):
+        return []
+
+    max_seed = int(oa_cfg.get("max_seed_papers_per_run", 300))
+    max_refs = int(oa_cfg.get("max_refs_per_seed", 80))
+    max_citers = int(oa_cfg.get("max_citers_per_seed", 80))
+
+    seeds = [r for r in seed_records if r.get("DOI")]
+    seeds = seeds[:max_seed]
+
+    expanded: List[Dict] = []
+
+    for r in seeds:
+        doi = r["DOI"]
+        try:
+            w = openalex_get_by_doi(doi)
+        except Exception:
+            continue
+        if not w:
+            continue
+
+        # Backward citations: referenced works
+        ref_ids = (w.get("referenced_works") or [])[:max_refs]
+        for ref_id in ref_ids:
+            try:
+                rw = openalex_fetch_work_by_id(ref_id)
+                if rw:
+                    expanded.append(extract_record_openalex(rw, bucket_id="OA_REF", query=doi))
+            except Exception:
+                pass
+
+        _oa_polite_sleep(cfg)
+
+        # Forward citations: works that cite this work
+        try:
+            citers = openalex_fetch_citers(w.get("id", ""), max_citers=max_citers)
+            for c in citers:
+                expanded.append(extract_record_openalex(c, bucket_id="OA_CITER", query=doi))
+        except Exception:
+            pass
+
+        _oa_polite_sleep(cfg)
+
+    return expanded
 
 # -----------------------------
 # Tagging + Routing
@@ -223,7 +412,6 @@ def dedup_records(records: List[Dict], existing_master: pd.DataFrame, existing_q
             continue
         if nt and nt in seen_title:
             continue
-        # update sets
         if doi:
             seen_doi.add(doi)
         if nt:
@@ -260,12 +448,21 @@ def main():
     tags_rules, high_any, review_any = compile_taxonomy(tax)
     year_min = int(cfg.get("meta", {}).get("year_min", DEFAULT_YEAR_MIN))
 
+    # Crossref paging controls
+    crossref_meta = cfg.get("meta", {}).get("crossref", {}) or {}
+    rows_per_page = int(crossref_meta.get("rows_per_page", CROSSREF_ROWS_PER_QUERY))
+    max_items_per_query = int(crossref_meta.get("max_items_per_query", 2000))
+    crossref_delay = float(crossref_meta.get("polite_delay_sec", 1.0))
+
     master_df = read_existing(MASTER_XLSX, MASTER_COLUMNS)
     queue_df = read_existing(QUEUE_XLSX, QUEUE_COLUMNS)
 
     all_new_records: List[Dict] = []
     runlog_rows: List[Dict] = []
 
+    # -----------------------------
+    # Pass 1: Bucket keyword discovery
+    # -----------------------------
     for bucket in cfg.get("buckets", []):
         bucket_id = bucket.get("bucket_id", "UNKNOWN_BUCKET")
         for q in bucket.get("queries", []):
@@ -274,7 +471,7 @@ def main():
                 continue
 
             try:
-                items = crossref_search(q, year_min=year_min)
+                items = crossref_search_cursor(q, year_min=year_min, rows=rows_per_page, max_items=max_items_per_query)
             except Exception as e:
                 runlog_rows.append({
                     "RunAtUTC": utc_now_iso(),
@@ -287,10 +484,8 @@ def main():
 
             for it in items:
                 rec = extract_record(it, bucket_id=bucket_id, query=q)
-                # Deterministic validation: require DOI or URL
                 if not rec["DOI"] and not rec["URL"]:
                     continue
-                # Basic year filter
                 if rec["Year"] and rec["Year"] < year_min:
                     continue
                 all_new_records.append(rec)
@@ -303,9 +498,66 @@ def main():
                 "ReturnedItems": len(items)
             })
 
-            time.sleep(1.0)  # be polite to Crossref
+            time.sleep(crossref_delay)
+
+    # -----------------------------
+    # Pass 2: Venue sweeps (recall boost for flagship venues)
+    # -----------------------------
+    for sweep in cfg.get("meta", {}).get("venue_sweeps", []) or []:
+        venue_id = sweep.get("venue_id", "VENUE")
+        sweep_year_min = int(sweep.get("year_min", year_min))
+        sweep_max_items = int(sweep.get("max_items", 5000))
+        for term in (sweep.get("query_terms", []) or []):
+            q = f"\"{term}\""
+            try:
+                items = crossref_search_cursor(q, year_min=sweep_year_min, rows=rows_per_page, max_items=sweep_max_items)
+            except Exception as e:
+                runlog_rows.append({
+                    "RunAtUTC": utc_now_iso(),
+                    "BucketID": f"VENUE_SWEEP_{venue_id}",
+                    "Query": q,
+                    "Status": "ERROR",
+                    "Message": str(e)
+                })
+                continue
+
+            for it in items:
+                rec = extract_record(it, bucket_id=f"VENUE_SWEEP_{venue_id}", query=q)
+                if not rec["DOI"] and not rec["URL"]:
+                    continue
+                if rec["Year"] and rec["Year"] < year_min:
+                    continue
+                all_new_records.append(rec)
+
+            runlog_rows.append({
+                "RunAtUTC": utc_now_iso(),
+                "BucketID": f"VENUE_SWEEP_{venue_id}",
+                "Query": q,
+                "Status": "OK",
+                "ReturnedItems": len(items)
+            })
+
+            time.sleep(crossref_delay)
 
     # Dedup against existing
+    all_new_records = dedup_records(all_new_records, master_df, queue_df)
+
+    # -----------------------------
+    # Pass 3: OpenAlex citation expansion (automatic recall for highly relevant papers)
+    # -----------------------------
+    try:
+        oa_records = openalex_citation_expand(cfg, all_new_records)
+        all_new_records.extend(oa_records)
+    except Exception as e:
+        runlog_rows.append({
+            "RunAtUTC": utc_now_iso(),
+            "BucketID": "OPENALEX_EXPAND",
+            "Query": "",
+            "Status": "ERROR",
+            "Message": str(e)
+        })
+
+    # Dedup again after expansion
     all_new_records = dedup_records(all_new_records, master_df, queue_df)
 
     # Tag + route
@@ -324,8 +576,7 @@ def main():
             rr["Reason"] = "Ambiguous Node-B evidence (B3-only or weak match)"
             queue_add.append(rr)
         else:
-            # DROP silently (still auditable via RunLog OK lines + results count)
-            pass
+            pass  # DROP
 
     if master_add:
         master_df = pd.concat([master_df, pd.DataFrame(master_add)], ignore_index=True)

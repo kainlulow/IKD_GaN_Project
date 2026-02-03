@@ -1,6 +1,5 @@
-pandas
-openpyxl
-pyyaml
-rapidfuzz
-requests
-python-dateutil
+requests>=2.31.0
+pandas>=2.0.0
+openpyxl>=3.1.2
+pyyaml>=6.0.1
+python-dateutil>=2.9.0

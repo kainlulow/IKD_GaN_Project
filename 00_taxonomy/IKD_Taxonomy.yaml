@@ -1,32 +1,36 @@
 meta:
-  version: v1.1-nodeb
+  version: v1.2-nodeb
   description: "Node B optimized deterministic keyword taxonomy for GaN CMOS logic demos and monolithic GaN IC platforms"
-
-# The tagging engine expects each tag to define include_any / exclude_any lists.
-# Matching is case-insensitive and uses substring checks on a concatenated text blob:
-# title + abstract + venue + container-title + keywords (if present)
 
 tags:
 
   # -----------------------------
-  # Node B core tags (requested)
+  # Node B core tags
   # -----------------------------
   B2_cmos_logic_demo:
     include_any:
       - "cmos"
       - "complementary"
       - "inverter"
-      - "ring oscillator"
       - "logic gate"
+      - "logic circuit"
+      - "logic circuits"
+      - "ring oscillator"
       - "voltage transfer"
       - "noise margin"
       - "rail-to-rail"
       - "vtc"
+      - "propagation delay"
+      - "short propagation delay"
+      - "gate delay"
     exclude_any:
       - "review"
       - "survey"
       - "perspective"
       - "roadmap"
+      # conservative exclusions to avoid rare non-digital "logic" contexts
+      - "quantum logic"
+      - "spin logic"
 
   B1_monolithic_ic_platform:
     include_any:
@@ -40,11 +44,18 @@ tags:
       - "integration platform"
       - "co-integrated"
       - "power integrated circuit"
+      - "system-in-package"
+      - "power module"
     exclude_any:
       - "review"
       - "survey"
       - "perspective"
       - "roadmap"
+      # reduce RFIC/mmWave GaN IC noise (optional but usually helpful for Node B1)
+      - "rfic"
+      - "mmwave"
+      - "microwave"
+      - "power amplifier"
 
   B3_non_cmos_logic_context:
     include_any:
@@ -62,7 +73,6 @@ tags:
     include_any:
       - "p-channel"
       - "p-type"
-      - "p-g an"
       - "p-gan"
       - "pfet"
       - "p-fet"
@@ -94,11 +104,16 @@ tags:
       - "device simulation"
     exclude_any: []
 
-routing:
+  mentions_delay_metrics:
+    include_any:
+      - "propagation delay"
+      - "gate delay"
+      - "rise time"
+      - "fall time"
+      - "switching speed"
+    exclude_any: []
 
-  # Deterministic routing thresholds:
-  # - High confidence: strong Node B tag present (B1 or B2)
-  # - ReviewQueue: only B3 or weak/ambiguous Node B evidence
+routing:
   high_confidence_any:
     - "B2_cmos_logic_demo"
     - "B1_monolithic_ic_platform"

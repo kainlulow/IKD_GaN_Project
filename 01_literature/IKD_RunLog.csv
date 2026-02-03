@@ -1,8 +1,0 @@
-RunDateTime,TimeWindow,SourcesQueried,NewCandidates,NewAccepted,NewReviewQueue,Notes
-2026-01-29 07:00,since 2010-01-01,Crossref API (metadata),400,84,316,Deterministic V1 run
-2026-01-29 07:25,since 2026-01-29,Crossref API (metadata),400,26,372,Deterministic V1 run
-2026-01-29 13:12,since 2026-01-29,Crossref API (metadata),400,0,372,Deterministic V1 run
-2026-01-29 23:30,since 2026-01-29,Crossref API (metadata),400,0,372,Deterministic V1 run
-2026-01-30 23:29,since 2026-01-29,Crossref API (metadata),400,1,373,Deterministic V1 run
-2026-01-31 23:27,since 2026-01-30,Crossref API (metadata),400,6,367,Deterministic V1 run
-2026-02-01 23:29,since 2026-01-31,Crossref API (metadata),400,1,371,Deterministic V1 run

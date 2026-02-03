@@ -22,3 +22,39 @@ RunAtUTC,BucketID,Query,Status,ReturnedItems
 2026-02-03T02:46:12.903919+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" pseudo-CMOS inverter",OK,200
 2026-02-03T02:46:14.197072+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" RTL inverter",OK,200
 2026-02-03T02:46:15.777960+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" logic inverter depletion",OK,200
+2026-02-03T04:29:07.318074+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" complementary logic circuits",OK,400
+2026-02-03T04:29:09.408351+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" complementary logic",OK,400
+2026-02-03T04:29:12.276476+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN CMOS"" inverter",OK,400
+2026-02-03T04:29:14.407489+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""complementary"" GaN inverter",OK,400
+2026-02-03T04:29:16.429473+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""p-channel"" GaN inverter",OK,400
+2026-02-03T04:29:18.764010+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" inverter propagation delay",OK,400
+2026-02-03T04:29:21.113750+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" ""ring oscillator""",OK,400
+2026-02-03T04:29:23.217454+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" ""logic gate""",OK,400
+2026-02-03T04:29:25.569754+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" ""voltage transfer"" inverter",OK,400
+2026-02-03T04:29:27.237635+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""GaN"" ""noise margin"" inverter",OK,400
+2026-02-03T04:29:29.157293+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""all-GaN"" CMOS inverter",OK,400
+2026-02-03T04:29:30.983066+00:00,NODE_B2_GaN_CMOS_Logic_Demos,"""monolithic"" GaN CMOS",OK,400
+2026-02-03T04:29:33.342998+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN-on-SOI"" integrated circuit",OK,400
+2026-02-03T04:29:36.285222+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN-on-SOI"" monolithically integrated",OK,400
+2026-02-03T04:29:38.008556+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN on SOI"" integrated circuit",OK,400
+2026-02-03T04:29:40.034686+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""monolithic"" GaN integrated circuit",OK,400
+2026-02-03T04:29:41.729153+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""all-GaN"" integrated circuit",OK,400
+2026-02-03T04:29:43.825323+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN power IC"" monolithic",OK,400
+2026-02-03T04:29:46.142618+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN"" ""power integrated circuit""",OK,400
+2026-02-03T04:29:48.569090+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN"" ""monolithic integration""",OK,400
+2026-02-03T04:29:50.425786+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""deep trench"" isolation GaN",OK,400
+2026-02-03T04:29:52.408825+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""trench isolation"" GaN",OK,400
+2026-02-03T04:29:54.401783+00:00,NODE_B1_Monolithic_GaN_IC_Platforms,"""GaN"" ""integrated driver"" IC",OK,400
+2026-02-03T04:29:56.117591+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" ""depletion load"" inverter",OK,400
+2026-02-03T04:29:57.950169+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" ""resistive load"" inverter",OK,400
+2026-02-03T04:29:59.870520+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" pseudo-CMOS inverter",OK,400
+2026-02-03T04:30:02.292675+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" RTL inverter",OK,400
+2026-02-03T04:30:05.414358+00:00,NODE_B3_Near_CMOS_Context,"""GaN"" logic inverter depletion",OK,400
+2026-02-03T04:30:07.582552+00:00,VENUE_SWEEP_IEDM,"""International Electron Devices Meeting""",OK,400
+2026-02-03T04:30:09.625608+00:00,VENUE_SWEEP_IEDM,"""IEEE International Electron Devices Meeting""",OK,400
+2026-02-03T04:30:11.931603+00:00,VENUE_SWEEP_IEDM,"""IEDM""",OK,400
+2026-02-03T04:30:14.774695+00:00,VENUE_SWEEP_VLSI,"""Symposium on VLSI Technology""",OK,400
+2026-02-03T04:30:17.241742+00:00,VENUE_SWEEP_VLSI,"""IEEE Symposium on VLSI Technology""",OK,400
+2026-02-03T04:30:19.223337+00:00,VENUE_SWEEP_VLSI,"""VLSI Technology""",OK,400
+2026-02-03T04:30:20.951202+00:00,VENUE_SWEEP_TED,"""IEEE Transactions on Electron Devices""",OK,400
+2026-02-03T04:30:22.886493+00:00,VENUE_SWEEP_EDL,"""IEEE Electron Device Letters""",OK,400

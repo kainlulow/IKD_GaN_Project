@@ -4066,3 +4066,52 @@ RunAtUTC,BucketID,Query,Status,ReturnedItems
 2026-04-26T05:13:50.618004+00:00,VENUE_SWEEP_EDL,"""GaN CMOS""",OK,400
 2026-04-26T05:13:53.752803+00:00,VENUE_SWEEP_EDL,"""GaN complementary logic""",OK,400
 2026-04-26T05:13:56.040922+00:00,VENUE_SWEEP_EDL,"""complementary GaN""",OK,400
+2026-04-27T05:23:17.009525+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN CMOS"" inverter",OK,400
+2026-04-27T05:23:19.773980+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" CMOS inverter",OK,400
+2026-04-27T05:23:22.214766+00:00,GaN_CMOS_A_Circuit_Demos,"""complementary"" GaN inverter",OK,400
+2026-04-27T05:23:25.397699+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" complementary inverter",OK,400
+2026-04-27T05:23:27.498841+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" complementary logic circuits",OK,400
+2026-04-27T05:23:29.809894+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" complementary logic",OK,400
+2026-04-27T05:23:31.927276+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" ""logic gate"" complementary",OK,400
+2026-04-27T05:23:34.078417+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" ""ring oscillator"" complementary",OK,400
+2026-04-27T05:23:36.909639+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" ""voltage transfer"" inverter",OK,400
+2026-04-27T05:23:39.347802+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" ""noise margin"" inverter",OK,400
+2026-04-27T05:23:41.981907+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" inverter propagation delay",OK,400
+2026-04-27T05:23:43.940363+00:00,GaN_CMOS_A_Circuit_Demos,"""GaN"" short propagation delay",OK,400
+2026-04-27T05:23:45.778238+00:00,GaN_CMOS_A_Circuit_Demos,"""all-GaN"" CMOS inverter",OK,400
+2026-04-27T05:23:47.604885+00:00,GaN_CMOS_A_Circuit_Demos,"""monolithic"" GaN CMOS",OK,400
+2026-04-27T05:23:49.583264+00:00,GaN_CMOS_B_Enablers,"""GaN CMOS""",OK,400
+2026-04-27T05:23:51.425158+00:00,GaN_CMOS_B_Enablers,"""complementary"" GaN transistor",OK,400
+2026-04-27T05:23:53.392709+00:00,GaN_CMOS_B_Enablers,"""complementary"" GaN FET",OK,400
+2026-04-27T05:23:55.847593+00:00,GaN_CMOS_B_Enablers,"""GaN"" p-channel transistor",OK,400
+2026-04-27T05:23:59.101537+00:00,GaN_CMOS_B_Enablers,"""GaN"" p-channel FET",OK,400
+2026-04-27T05:24:03.324844+00:00,GaN_CMOS_B_Enablers,"""p-channel"" GaN",OK,400
+2026-04-27T05:24:07.322975+00:00,GaN_CMOS_B_Enablers,"""p-type"" GaN FET",OK,400
+2026-04-27T05:24:10.238827+00:00,GaN_CMOS_B_Enablers,"""p-GaN"" transistor",OK,400
+2026-04-27T05:24:13.304986+00:00,GaN_CMOS_B_Enablers,"""p-GaN"" FET",OK,400
+2026-04-27T05:24:15.392927+00:00,GaN_CMOS_B_Enablers,"""p-channel"" GaN MOSFET",OK,400
+2026-04-27T05:24:17.791056+00:00,GaN_CMOS_B_Enablers,"""GaN"" n-channel MOSFET",OK,400
+2026-04-27T05:24:20.159940+00:00,GaN_CMOS_B_Enablers,"""GaN"" CMOS technology",OK,400
+2026-04-27T05:24:23.993812+00:00,GaN_CMOS_B_Enablers,"""GaN"" complementary technology",OK,400
+2026-04-27T05:24:28.116454+00:00,GaN_CMOS_B_Enablers,"""GaN"" complementary integration",OK,400
+2026-04-27T05:24:31.345136+00:00,GaN_CMOS_B_Enablers,"""GaN"" threshold voltage engineering complementary",OK,400
+2026-04-27T05:24:34.251538+00:00,GaN_CMOS_B_Enablers,"""normally-off"" GaN p-channel",OK,400
+2026-04-27T05:24:36.561568+00:00,GaN_CMOS_B_Enablers,"""normally-off"" GaN complementary",OK,400
+2026-04-27T05:24:39.433234+00:00,GaN_CMOS_B_Enablers,"""enhancement-mode"" GaN p-channel",OK,400
+2026-04-27T05:24:42.201102+00:00,GaN_CMOS_B_Enablers,"""enhancement-mode"" GaN complementary",OK,400
+2026-04-27T05:24:46.320429+00:00,GaN_CMOS_B_Enablers,"""gate stack"" GaN p-channel",OK,400
+2026-04-27T05:24:49.299465+00:00,GaN_CMOS_B_Enablers,"""Mg"" doped p-GaN transistor",OK,400
+2026-04-27T05:24:51.693922+00:00,GaN_CMOS_B_Enablers,"""polarization"" GaN p-channel transistor",OK,400
+2026-04-27T05:24:54.135646+00:00,GaN_CMOS_B_Enablers,"""polarization"" enhanced complementary GaN",OK,400
+2026-04-27T05:24:56.378838+00:00,VENUE_SWEEP_IEDM,"""GaN CMOS""",OK,400
+2026-04-27T05:24:58.777182+00:00,VENUE_SWEEP_IEDM,"""GaN complementary logic""",OK,400
+2026-04-27T05:25:01.496498+00:00,VENUE_SWEEP_IEDM,"""complementary GaN""",OK,400
+2026-04-27T05:25:05.339739+00:00,VENUE_SWEEP_VLSI,"""GaN CMOS""",OK,400
+2026-04-27T05:25:08.058201+00:00,VENUE_SWEEP_VLSI,"""GaN complementary logic""",OK,400
+2026-04-27T05:25:11.799772+00:00,VENUE_SWEEP_VLSI,"""complementary GaN""",OK,400
+2026-04-27T05:25:16.284828+00:00,VENUE_SWEEP_TED,"""GaN CMOS""",OK,400
+2026-04-27T05:25:19.050641+00:00,VENUE_SWEEP_TED,"""GaN complementary logic""",OK,400
+2026-04-27T05:25:22.628560+00:00,VENUE_SWEEP_TED,"""complementary GaN""",OK,400
+2026-04-27T05:25:24.946189+00:00,VENUE_SWEEP_EDL,"""GaN CMOS""",OK,400
+2026-04-27T05:25:27.707484+00:00,VENUE_SWEEP_EDL,"""GaN complementary logic""",OK,400
+2026-04-27T05:25:31.106587+00:00,VENUE_SWEEP_EDL,"""complementary GaN""",OK,400
